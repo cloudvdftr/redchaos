@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <!-- Make it work with ie -->
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+
+    <!-- fav icon -->
+    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+
+    <!-- Css file import -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+
+    <!-- Bootstrap CSS -->
+    <!-- <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+        integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous"> -->
+    <link rel="stylesheet" href="/static/bootstrap/css/bootstrap.min.css">
+    <!-- Font awesome CSS -->
+    <link rel="stylesheet" href="/static/fontawesome-free-5.10.0-web/css/all.css">
+    <script src="/static/fontawesome-free-5.10.0-web/js/all.js"></script>
+    <style>
+        body {
+            height: 100%;
+            width: 100%;
+            background-color: rgb(34, 33, 33);
+            color: white;
+        }
+
+        div.log {
+            background-color: aliceblue;
+            color: black;
+            height: 20vh;
+            width: 100%;
+            overflow: auto;
+            display: flex;
+            flex-direction: column-reverse;
+        }
+
+        div.header {
+            width: 100%;
+            height: 50px;
+            background-color: rgb(34, 33, 33);
+            color: #e60012;
+            border-bottom: 1px solid !important;
+            position: sticky;
+            top: 0px;
+            overflow: hidden;
+        }
+
+        div.stopTasks {
+            color: #e60012;
+            border-bottom: 1px solid !important;
+        }
+
+        div.footer {
+            width: 100%;
+            text-align: center;
+            background: grey;
+            color: white;
+            position: fixed;
+            height: 25px;
+            bottom: 0px;
+        }
+
+        div.header div.logo {
+            float: left;
+        }
+
+        .btn-danger {
+            background-color: #e60012;
+            color: white"
+
+        }
+
+        div.hosts {
+            text-align: left;
+        }
+
+        .stopButtons {
+            /* margin: 10px; */
+        }
+
+        table {
+            font-family: arial, sans-serif;
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        table:hover {
+            background-color: white;
+            color: red
+        }
+
+        td,
+        th {
+            border: 2px solid rgb(173, 173, 173);
+            text-align: left;
+            padding: 8px;
+        }
+
+        tr:nth-child(even) {
+            background-color: #e60012;
+            color: white
+        }
+
+        tr:nth-child(odd) {
+            background-color: white;
+            color: #e60012
+        }
+
+        .selectionDiv {
+            margin: 10px;
+        }
+
+        .overlay {
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            position: fixed;
+            z-index: 1021;
+            background: rgba(255, 255, 255, 0.5);
+        }
+
+        .overlay__inner {
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            position: absolute;
+        }
+
+        .overlay__content {
+            left: 50%;
+            position: absolute;
+            top: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .spinner {
+            width: 75px;
+            height: 75px;
+            display: inline-block;
+            border-width: 2px;
+            /* border-color: rgb(139, 139, 139); */
+            border-color: black;
+            border-top-color: rgb(250, 0, 0);
+            animation: spin 1s infinite linear;
+            border-radius: 100%;
+            border-style: solid;
+        }
+
+        @keyframes spin {
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* navbar */
+        .navbar-default {
+            background-color: rgba(253, 253, 253, 0.05);
+            /* border: 1px #e60012; 
+            border-bottom-style: solid; */
+        }
+    </style>
+
+</head>
+
+<body>
+    <div class="overlay" id="overlayDiv" style="display: none;">
+        <title>REDChaos</title>
+
+        <div class="overlay__inner">
+            <div class="overlay__content"><span class="spinner"></span></div>
+        </div>
+    </div>
+    <nav class="navbar sticky-top navbar-expand-sm navbar-default">
+        <!-- Brand/logo -->
+        <a class="navbar-brand" href="#">
+            <img src="/static/img/vodafoneLogoTransparent.png" alt="Vodafone Logo" width="60" height="50 ">
+        </a>
+        <ul class="navbar-nav">
+            <li class="nav-item">
+                <!-- <a class="nav-link" href="#" style="color: #e60012;">RED-Chaos</a> -->
+                <h4 style="color: #e60012;">REDChaos</h4>
+            </li>
+        </ul>
+    </nav>
+    <div class="container-fluid">
+
+        <div class="row">
+            <div class="col">
+                <div id="stopTasksDiv" style="display: none; text-align: center;">
+
+                    <h3>
+                        <i class="fas fa-exclamation-triangle"></i>
+                        There is a running session. Please stop the session to continue!!!
+                    </h3>
+                    <button id="stopTasksButton" class="btn btn-danger" onclick="stopTasks()"
+                        style="margin-bottom: 15px;">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        Stop The Sessions
+                    </button>
+
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+
+            <!-- Node Status Table and Alive Pods -->
+            <div class="col-sm-2" style="border: 1px #e60012; border-style: solid none solid none; text-align: center;">
+                <!-- <div class="col-sm-3" style="border: 1px #e60012; border-style: none none solid none; text-align: center;"> -->
+                <!-- Alive Pods -->
+                <h3 class="alivePods" id="alivePods" style="color: #e60012;"></h3>
+                <p></p>
+                <!-- Node Table -->
+                <!-- <div class="node-status">
+                </div> -->
+                <p></p>
+                <!-- </div> -->
+
+                <!-- Pod killer -->
+                <!-- <div class="col-sm-3" style="border: 1px #e60012; border-style: none none solid solid"> -->
+                <div style="text-align: center">
+                    <div id="clusterSelectionDiv" class="selectionDiv">
+                        <h2 style="color: #e60012;">Cluster</h2>
+                        <!-- Select Clusters Menu -->
+                        <select id="clusterSelection" class="browser-default custom-select dropdown-primary" required
+                            onchange="if (this.selectedIndex) clusterChange(this);">
+
+                            <option value="" disabled selected hidden>Please Choose...</option>
+
+                            {% for cluster in clusters %}
+                            <option value={{cluster}}>{{cluster}}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div id="projectSelectionDiv" class="selectionDiv" style="display: none;">
+                        <h2 style="color: #e60012;">Project</h2>
+                        <!-- Select Projects Menu -->
+                        <select id="projectSelection" class="browser-default custom-select dropdown-primary" required
+                            onchange="if (this.selectedIndex) projectChange();">
+                            <option value="" disabled selected hidden>Please Choose...</option>
+                        </select>
+                    </div>
+
+                    <div id="loadingSelectionsDiv" class="selectionDiv" style="display: none;">
+                        <i class="fas fa-spinner fa-spin fa-3x"></i>
+                    </div>
+
+                    <div id="actionSelectionDiv" class="selectionDiv" style="display: none;">
+                        <h2 style="color: #e60012;">Action</h2>
+                        <!-- Select Actions Menu -->
+                        <select id="actionSelection" class="browser-default custom-select dropdown-primary">
+                            <option value="Kill Pods" selected>Kill Pods</option>
+                        </select>
+                    </div>
+                    <div id="secondSelectionDiv" class="selectionDiv" style="display: none;">
+                        <h2 style="color: #e60012;">Seconds</h2>
+                        <!-- Select Seconds Menu -->
+                        <select id="secondSelection" class="browser-default custom-select dropdown-primary">
+                            <option value="60" selected>60</option>
+                            <option value="30">30</option>
+                        </select>
+                    </div>
+                    <div id="killButtonDiv" class="selectionDiv" style="display: none;">
+                        <!-- Kill Pod Button -->
+                        <button id="killButton" class="btn btn-danger stopButtons" onclick="killPod()"
+                            style="display: block;">
+                            <i class="fas fa-running"></i>
+                            Start
+                        </button>
+                        <!-- Cancel Kill Pod Button -->
+                        <button id="cancelKillButton" class="btn btn-danger stopButtons" onclick="cancelKillPod()"
+                            style="display: none;">
+                            <i class="fas fa-stop-circle"></i>
+                            Stop
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Charts for active nodes -->
+            <div class="col-sm-5" style="border: 1px #e60012; border-style: solid none solid solid;">
+                <canvas id="myChart"></canvas>
+            </div>
+            <div class="col-sm-5" style="border: 1px #e60012; border-style: solid none solid solid;">
+                <canvas id="mySecondChart"></canvas>
+            </div>
+
+        </div>
+
+        <!-- Hosts -->
+        <div class="row" style="text-align: center;">
+            <div class="col">
+                <div id="hostsDiv" class="selectionDiv"></div>
+            </div>
+        </div>
+        <div class="row" style="text-align: center;">
+            <div class="col">
+                <div id="hostConnectionButtonDiv" class="selectionDiv" style="display: none;">
+                    <button id="hostConnectionButton" class="btn btn-danger stopButtons" onclick="hostConnection()">Test
+                        Routes</button>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- Logs for the nodes -->
+        <div class="row">
+            <div class="log">
+            </div>
+        </div>
+
+        <div class="row" style="margin-bottom: 25px;">
+            <div class="footer">
+                <div class="logo">
+                    <!-- <img src="smiley.gif" alt="Smiley face" width="42" height="42"> -->
+                </div>
+                <p>Cloud Operations & IT Infrastructure @Author: Kaan Barış Kocabaş</p>
+            </div>
+        </div>
+
+        <!-- Modal -->
+        <div class="modal fade" id="myModal" role="dialog">
+            <div class="modal-dialog">
+
+                <!-- Modal content-->
+                <div class="modal-content" style="color: black;">
+                    <!-- <div class="modal-content" style="background: rgb(34, 33, 33); color: #e60012;"> -->
+                    <div class="modal-header">
+                        <h4 class="modal-title">Could Not Find Any Projects</h4>
+                        <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Could not fetch any projects. Please select another cluster or check your permissions!
+                            Cluster selection will be reset.</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-danger" data-dismiss="modal">OK</button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Optional JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <!-- <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
+        integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
+        crossorigin="anonymous"></script> -->
+    <script src="/static/jquery/jquery-3.4.1.min.js"></script>
+    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"
+            integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
+            crossorigin="anonymous"></script> -->
+    <script src="/static/popperjs/popper-1.15.0.min.js"></script>
+
+    <!-- <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"
+        integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
+        crossorigin="anonymous"></script> -->
+    <script src="/static/bootstrap/js/bootstrap.min.js"></script>
+
+    <!-- import Chart.js -->
+    <!-- <script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0"></script> -->
+    <script src="/static/chartjs/Chart.js"></script>
+
+    <!-- <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/socket.io/1.3.6/socket.io.min.js"></script> -->
+    <script src="/static/socket-io/socket-io-1.4.5.min.js"></script>
+    <script>
+
+        // Overwrite the endswith method for ie
+        if (!String.prototype.endsWith) {
+            String.prototype.endsWith = function (search, this_len) {
+                if (this_len === undefined || this_len > this.length) {
+                    this_len = this.length;
+                }
+                return this.substring(this_len - search.length, this_len) === search;
+            };
+        }
+
+        var ctx = document.getElementById('myChart').getContext('2d');
+        var secondCtx = document.getElementById('mySecondChart').getContext('2d');
+
+        var lineChartData = {
+            // labels: [],
+            labels: [],
+            datasets: [
+                {
+                    label: "alive pods",
+                    data: [],
+                    lineTension: 0.1,
+                    fill: false,
+                    borderColor: '#e60012',
+                    backgroundColor: 'transparent',
+                    // borderDash: [5, 5],
+                    pointBorderColor: '#e60012',
+                    // pointBackgroundColor: 'rgba(255,150,0,0.5)',
+                    pointBackgroundColor: 'rgba(255,150,0,0.5)',
+                    pointRadius: 5,
+                    pointHoverRadius: 10,
+                    pointHitRadius: 30,
+                    pointBorderWidth: 2,
+                    pointStyle: 'rectRounded'
+                }]
+        }
+
+        var chart = new Chart(ctx, {
+            // The type of chart we want to create
+            type: 'line',
+
+            // The data for our dataset
+            data: lineChartData,
+
+            // Configuration options go here
+            options: {
+                legend: {
+                    display: true,
+                    labels: {
+                        fontColor: 'rgb(167, 167, 167)',
+                    }
+                },
+                title: {
+                    display: true,
+                    text: 'Alive Pods Chart',
+                    fontColor: 'rgb(167, 167, 167)',
+                    fontSize: 18
+                },
+                animation: {
+                    duration: 0 // general animation time
+                },
+                hover: {
+                    animationDuration: 0 // duration of animations when hovering an item
+                },
+                responsiveAnimationDuration: 0, // animation duration after a resize
+                scales: {
+                    xAxes: [{
+                        gridLines: {
+                            color: 'rgb(167, 167, 167)',
+                            lineWidth: 1
+                        },
+                        ticks: {
+                            fontColor: 'white'
+                            // fontColor: 'rgb(167, 167, 167)'
+                        }
+                    }],
+                    yAxes: [{
+                        gridLines: {
+                            color: 'rgb(167, 167, 167)',
+                            lineWidth: 1
+                        },
+                        ticks: {
+                            beginAtZero: true,
+                            fontColor: 'white'
+                            // fontColor: 'rgb(167, 167, 167)'
+                        }
+                    }]
+                }
+            }
+        });
+        var barChartData = {
+            labels: [],
+            datasets: [
+                {
+                    backgroundColor: '#e60012',
+                    borderColor: '#e60012',
+                    data: []
+                }]
+        }
+
+        var secondChart = new Chart(secondCtx, {
+            // The type of chart we want to create
+            type: 'bar',
+
+            // The data for our dataset
+            data: barChartData,
+
+            // Configuration options go here
+            options: {
+                legend: {
+                    display: true,
+                    labels: {
+                        fontColor: 'rgb(167, 167, 167)',
+                    }
+                },
+                title: {
+                    display: true,
+                    text: 'Alive Pods Chart',
+                    fontColor: 'rgb(167, 167, 167)',
+                    fontSize: 18
+                },
+                animation: {
+                    duration: 0 // general animation time
+                },
+                hover: {
+                    animationDuration: 0 // duration of animations when hovering an item
+                },
+                responsiveAnimationDuration: 0, // animation duration after a resize
+                scales: {
+                    xAxes: [{
+                        gridLines: {
+                            color: 'rgb(167, 167, 167)',
+                            lineWidth: 1
+                        },
+                        ticks: {
+                            fontColor: 'white'
+                        }
+                    }],
+                    yAxes: [{
+                        gridLines: {
+                            color: 'rgb(167, 167, 167)',
+                            lineWidth: 1
+                        },
+                        ticks: {
+                            beginAtZero: true,
+                            fontColor: 'white'
+                        }
+                    }]
+                }
+            }
+        });
+
+        // Connect to the socket io
+        var socket = io.connect('http://' + document.domain + ':' + location.port);
+
+        $(document).ready(function () {
+            document.getElementById("overlayDiv").style.display = "none";
+            // Internet Explorer 6-11
+            var isIE = /*@cc_on!@*/false || !!document.documentMode;
+            // console.log("is it ie : " + isIE);
+            appDisabled();
+            appHidden();
+            // console.log("NEW CONNECTION!!!!!!!!!!!!")
+            socket.emit("check application");
+        });
+
+        function checkPodKillingStatus() {
+            $.post('/cancelkill', function (data) {
+                // console.log(data);
+                if (data != undefined && data.cancel == true) {
+                    socket.emit("cancel kill pod");
+                }
+            });
+        }
+
+        function appShown() {
+            document.getElementById('myChart').style.display = 'none';
+            document.getElementById('mySecondChart').style.display = 'none';
+            document.getElementById('projectSelectionDiv').style.display = 'none';
+            document.getElementById('actionSelectionDiv').style.display = 'none';
+            document.getElementById('secondSelectionDiv').style.display = 'none';
+            document.getElementById('killButtonDiv').style.display = 'none';
+        }
+
+        function noTasks() {
+            $("#clusterSelection").prop('disabled', false).change();
+            document.getElementById('stopTasksDiv').style.display = 'none';
+        }
+
+        function appEnabled() {
+            noTasks();
+            $("#projectSelection").prop('disabled', true).change();
+            $("#secondSelection").prop('disabled', true).change();
+            $("#actionSelection").prop('disabled', true).change();
+            $("#killButton").prop('disabled', true).change();
+        }
+
+        function appHidden() {
+            document.getElementById('myChart').style.display = 'none';
+            document.getElementById('mySecondChart').style.display = 'none';
+            document.getElementById('projectSelectionDiv').style.display = 'none';
+            document.getElementById('actionSelectionDiv').style.display = 'none';
+            document.getElementById('secondSelectionDiv').style.display = 'none';
+            document.getElementById('killButtonDiv').style.display = 'none';
+            document.getElementById('alivePods').style.display = 'none';
+        }
+
+        function tasksRunning() {
+            $("#clusterSelection").prop('disabled', true).change();
+            document.getElementById('stopTasksDiv').style.display = 'block';
+        }
+
+        function appDisabled() {
+            tasksRunning();
+            $("#projectSelection").prop('disabled', true).change();
+            $("#secondSelection").prop('disabled', true).change();
+            $("#actionSelection").prop('disabled', true).change();
+            $("#killButton").prop('disabled', true).change();
+        }
+
+        var clusterValueTmp = ""
+
+        function stopTasks() {
+            $('#stopTasksButton').prop('disabled', true).change();
+            socket.emit('stop background');
+            cancelKillPod();
+            cancelClusterSelection();
+            cancelHost();
+        }
+
+        function cancelClusterSelection() {
+            $("#clusterSelection").val("").change();
+            clusterValueTmp = ""
+        }
+
+        function cancelHost() {
+            $.ajax({
+                url: '/cancelhost',
+                type: 'DELETE',
+            });
+            $('#hostsDiv').empty();
+            document.getElementById('hostConnectionButtonDiv').style.display = 'none';
+        }
+
+        socket.on('stop tasks', function (data) {
+            $("#clusterSelection").val("").change();
+            cancelClusterSelection();
+            cancelHost();
+        });
+
+        socket.on('enable selection', function (data) {
+            $('#stopTasksButton').prop('disabled', false).change();
+            if (data) {
+                // console.log("there are none")
+                noTasks();
+                appHidden();
+            } else {
+                // console.log("there are tasks running")
+                tasksRunning();
+            }
+        });
+
+        // If different connections are made listen for the connect event emit
+        socket.on('connect', function () {
+            checkPodKillingStatus();
+            // console.log('I am connected');
+        });
+        socket.on('file updated', function (data) {
+            // console.log(data);
+            // $('div.node-status').append('<div class="msgbbl"><b>' + data[0] + '    ' + data[2] + '</b></div>');
+            // $('table.nodeTable').append('<tr><td>' + data[0] + '</td>' + '<td>' + data[2] + '</td></tr>');
+            for (node in data) {
+                // Add the rows to the table
+                $('table.nodeTable').append('<tr><td>' + data[node][0] + '</td>' + '<td>' + data[node][2] + '</td></tr>');
+            }
+        });
+        socket.on('pod updated', function (data) {
+            // Empty the alive pods number
+            $('h3.alivePods').empty();
+            // Add the alive pod number
+            $('h3.alivePods').append('<span class="badge badge-danger">Alive Pods: ' + data + '</span>');
+            data == 0 ? $("#killButton").prop('disabled', true).change() : $("#killButton").prop('disabled', false).change();
+        });
+        socket.on('projects updated', function (data) {
+            // console.log(data)
+            if (data == null || data == [] || data.length == 0) {
+                // alert("No projects found!!!");
+                $("#myModal").modal();
+                document.getElementById('loadingSelectionsDiv').style.display = 'none';
+                stopTasks();
+            } else {
+                $('#projectSelection').empty();
+                $('#projectSelection').append('<option value="" disabled selected hidden>Please Choose...</option>')
+                for (project in data) {
+                    $('#projectSelection').append(
+                        '<option value=' + data[project] + '>' + data[project] + '</option>'
+                    );
+                }
+                $("#projectSelection").prop('disabled', false).change();
+                document.getElementById('loadingSelectionsDiv').style.display = 'none';
+                document.getElementById('projectSelectionDiv').style.display = 'block';
+            }
+        });
+        socket.on('host updated', function (data) {
+            document.getElementById('hostsDiv').style.display = 'block';
+            document.getElementById('hostConnectionButtonDiv').style.display = 'block';
+            $('#hostsDiv').empty();
+            if (data.length == 0) {
+                $('#hostsDiv').append('<h4> There are no routes </h4>');
+            } else {
+                for (host in data) {
+                    if (data[host].status == 'OK') {
+                        $('#hostsDiv').append('<p>' + '<i style="color:green; margin-right:3px;" class="fas fa-check"></i>' + data[host].host + '</p>');
+                    } else {
+                        $('#hostsDiv').append('<p>' + '<i style="color:red; margin-right:3px;" class="fas fa-times"></i>' + data[host].host + '</p>');
+                    }
+                }
+            }
+            setTimeout(function () { $("#hostConnectionButton").prop("disabled", false).change(); }, 30000);
+        });
+        socket.on('update chart', function (data) {
+            updateChart(data.labels, data.values);
+        });
+        socket.on('update second chart', function (data) {
+            updateSecondChart(data)
+        });
+        function updateSecondChart(data) {
+            $('#mySecondChart').empty()
+            var barChartData = {
+                labels: [],
+                datasets: [{
+                    label: "Running pods",
+                    backgroundColor: 'rgb(230, 0, 18, 0.2)',
+                    borderColor: 'rgb(230, 0, 18, 1)',
+                    borderWidth: 1,
+                    data: []
+                }]
+            }
+            data.forEach(element => {
+                barChartData.labels.push(element.name);
+                barChartData.datasets[0].data.push(element.value);
+            });
+            secondChart.data = barChartData;
+            secondChart.update();
+        }
+        socket.on('clear', function () {
+        });
+
+        function updateChart(myLabels, myValues) {
+            var barChartData = {
+                labels: myLabels,
+                datasets: [
+                    {
+                        label: "Running pods",
+                        data: myValues,
+                        lineTension: 0.1,
+                        fill: false,
+                        backgroundColor: 'rgb(230, 0, 18, 0.2)',
+                        borderColor: 'rgb(230, 0, 18, 0.5)',
+                        // backgroundColor: 'transparent',
+                        // borderDash: [5, 5],
+                        pointBorderColor: '#e60012',
+                        // pointBackgroundColor: 'rgba(255,150,0,0.5)',
+                        pointBackgroundColor: 'rgba(255,150,0,0.5)',
+                        pointRadius: 5,
+                        pointHoverRadius: 10,
+                        pointHitRadius: 30,
+                        pointBorderWidth: 2,
+                        pointStyle: 'rectRounded'
+                    }]
+            }
+            chart.data = barChartData;
+            chart.update();
+        }
+
+        var killButton = document.getElementById('killButton');
+        var cancelKillButton = document.getElementById('cancelKillButton');
+        // Get the Second Selection Element
+        var secondSelection = document.getElementById('secondSelection');
+        var projectSelection = document.getElementById('projectSelection');
+        var clusterSelection = document.getElementById('clusterSelection')
+
+        function killPod() {
+            $("#killButton").prop('disabled', true).change();
+            // Selected Value
+            var selectedVal = secondSelection.options[secondSelection.selectedIndex].value;
+            var projectSelectedValue = projectSelection.options[projectSelection.selectedIndex].value;
+            var clusterValue = clusterSelection.options[clusterSelection.selectedIndex].value;
+            // Emit and handle the pod killing on the python backend
+            socket.emit('kill pod', {
+                "seconds": selectedVal,
+                "project": projectSelectedValue,
+                "cluster": clusterValue
+            })
+        }
+
+        function cancelKillPod() {
+            $("#cancelKillButton").prop('disabled', true).change();
+            socket.emit('cancel kill pod')
+            $.ajax({
+                url: '/cancelkill',
+                type: 'DELETE',
+            });
+        }
+
+        function hostConnection() {
+            $("#hostConnectionButton").prop("disabled", true).change();
+            loadingRoutes();
+            socket.emit('host connection testing')
+        }
+
+        socket.on('host connection tested', function () {
+            $("#hostConnectionButton").prop("disabled", true).change();
+            loadingRoutes();
+            socket.emit('host connection');
+        });
+
+        function loadingSelections() {
+            document.getElementById('loadingSelectionsDiv').style.display = 'block';
+            document.getElementById("overlayDiv").style.display = "inline";
+        }
+
+        function loadedSelections() {
+            document.getElementById('loadingSelectionsDiv').style.display = 'none';
+            document.getElementById("overlayDiv").style.display = "none";
+        }
+
+        function loadingRoutes() {
+            $('#hostsDiv').empty();
+            $('#hostsDiv').append('<i class="fas fa-spinner fa-spin fa-3x"></i>');
+        }
+
+        socket.on('py kill pod', function (data) {
+            $("#secondSelection").val(data.seconds).change();
+            $("#secondSelection").prop('disabled', true).change();
+            $("#actionSelection").prop('disabled', true).change();
+            killButton.style.display = 'none';
+            cancelKillButton.style.display = 'block';
+            $("#cancelKillButton").prop('disabled', false).change();
+        });
+
+        socket.on('py cancel kill pod', function () {
+            $("#secondSelection").prop('disabled', false).change();
+            $("#actionSelection").prop('disabled', false).change();
+            killButton.style.display = 'block';
+            cancelKillButton.style.display = 'none';
+        });
+
+        socket.on('log', function (data) {
+            $('div.log').prepend('<p>' + data + '</p>');
+        });
+
+        socket.on('log clear', function (data) {
+            $('div.log').empty();
+        });
+
+
+        var projectValueTmp = ""
+        var dontChangeProject = false;
+
+        function clusterChange() {
+            if ($("#clusterSelection").prop("disabled") == false) {
+                var clusterValue = undefined;
+                if (clusterSelection && clusterSelection.options[clusterSelection.selectedIndex] && clusterSelection.options[clusterSelection.selectedIndex].value) {
+                    clusterValue = clusterSelection.options[clusterSelection.selectedIndex].value;
+                }
+                if (clusterValue != clusterValueTmp) {
+                    socket.emit('update projects', clusterValue);
+                }
+                clusterValueTmp = clusterValue;
+                $("#clusterSelection").prop('disabled', true).change();
+                document.getElementById('loadingSelectionsDiv').style.display = 'block';
+            }
+
+        }
+
+        socket.on('cluster change', function (clusterValue) {
+            $("#clusterSelection").val(clusterValue).change();
+            projectValueTmp = "";
+            $("#projectSelection").val('').change();
+            $("#secondSelection").prop('disabled', true).change();
+            $("#actionSelection").prop('disabled', true).change();
+            $("#projectSelection").prop('disabled', true).change();
+            $("#killButton").prop('disabled', true).change();
+            document.getElementById('actionSelectionDiv').style.display = 'none';
+            document.getElementById('projectSelectionDiv').style.display = 'none';
+            document.getElementById('secondSelectionDiv').style.display = 'none';
+            document.getElementById('killButtonDiv').style.display = 'none';
+            document.getElementById('myChart').style.display = 'none';
+            document.getElementById('mySecondChart').style.display = 'none';
+            clusterValueTmp = clusterValue;
+            $("#clusterSelection").prop('disabled', true).change();
+            document.getElementById('alivePods').style.display = 'none';
+        });
+
+        function projectChange() {
+            if ($("#projectSelection").prop("disabled") == false) {
+                var projectValue = undefined;
+                if (projectSelection && projectSelection.options[projectSelection.selectedIndex] && projectSelection.options[projectSelection.selectedIndex].value) {
+                    projectValue = projectSelection.options[projectSelection.selectedIndex].value;
+                }
+                if (projectValue != projectValueTmp) {
+                    socket.emit('background thread', projectValue);
+                }
+                projectValueTmp = projectValue;
+                $("#projectSelection").prop("disabled") == true
+            }
+        }
+
+        socket.on('project change', function (projectValue) {
+            projectValueTmp = projectValue;
+            $("#projectSelection").val(projectValue).change();
+            $("#projectSelection").prop('disabled', true).change();
+            loadingSelections();
+            loadingRoutes();
+        });
+
+        socket.on('show chart', function (data) {
+            document.getElementById('alivePods').style.display = 'block';
+            $("#secondSelection").prop('disabled', false).change();
+            $("#actionSelection").prop('disabled', false).change();
+            loadedSelections();
+            // $("#killButton").prop('disabled', false).change();
+            document.getElementById('projectSelectionDiv').style.display = 'block';
+            document.getElementById('actionSelectionDiv').style.display = 'block';
+            document.getElementById('secondSelectionDiv').style.display = 'block';
+            document.getElementById('killButtonDiv').style.display = 'inline-block';
+            document.getElementById('myChart').style.display = 'block';
+            document.getElementById('mySecondChart').style.display = 'block';
+        });
+
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,2 @@
+SCRIPTS_WORKING_DIR = /ocp/
+CLUSTERS = cluster_URL

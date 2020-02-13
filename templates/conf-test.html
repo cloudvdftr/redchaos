@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+</head>
+
+<body>
+
+    <select id="clusterSelection" class="browser-default custom-select dropdown-primary" required>
+
+        <option value="" disabled selected hidden>Please Choose...</option>
+
+        {% for cluster in clusters %}
+        <option value={{cluster}}>{{cluster}}</option>
+        {% endfor %}
+    </select>
+
+</body>

@@ -1,0 +1,1 @@
+python /ocp/projectnames.py
